@@ -57,22 +57,21 @@ fn vapp(v1: Value, v2: Value) -> Value {
 
 type Env = Vec<Value>;
 
-fn evalInferable(term: &InferableTerm, env: Env) -> Value {
+fn evalInferable(term: &InferableTerm, env: &Env) -> Value {
     match term {
         InferableTerm::Ann(e, _) => evalCheckable(&e, env),
         InferableTerm::Free(x) => vfree(x.clone()),
         InferableTerm::Bound(i) => env[*i].clone(),
-        InferableTerm::App(e, f) => vapp(evalInferable(&e, env.clone()), evalCheckable(&f, env.clone()))
+        InferableTerm::App(e, f) => vapp(evalInferable(e, env), evalCheckable(f, env))
     }
 }
 
-fn evalCheckable(term: &CheckableTerm, env: Env) -> Value {
+fn evalCheckable(term: &CheckableTerm, env: &Env) -> Value {
     match term {
-        CheckableTerm::Inf(term) => evalInferable(&term, env),
+        CheckableTerm::Inf(t) => evalInferable(t, env),
         CheckableTerm::Lam(f) => {
-            let env2 = env.clone();
             let anon = |x : Value| -> Value {
-                evalCheckable(f, env2)
+                evalCheckable(f, env)
             };
             return Value::VLam(Rc::new(anon))
         }
